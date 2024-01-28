@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TrainAgentRL implements Callable<List<String>> {
 
-    List<QTableDto> QTableDtoList;
+    QTableDto Qtable=new QTableDto();
     private final Lock agentLock = new ReentrantLock();
     private static long startTime = System.currentTimeMillis();
 
@@ -36,13 +36,13 @@ public class TrainAgentRL implements Callable<List<String>> {
         Connect4 game = new Connect4();
         Connect4Dto connect4Dto = new Connect4Dto(game);
 
-        ReinforceLearningAgentConnectFour agent = new ReinforceLearningAgentConnectFour(connect4Dto, QTableDtoList);
+        ReinforceLearningAgentConnectFour agent = new ReinforceLearningAgentConnectFour(connect4Dto, Qtable);
 
 
         if (agentLock.tryLock()) {
             try {
-                QTableDto Qtable = agent.ReinforceLearning();
-                QTableDtoList.add(Qtable);
+                Qtable = agent.ReinforceLearning();
+
                 if (Qtable.getHashedData() == null || Qtable.getHashedData().isEmpty()) {
                     //           System.out.println("Thread " + Thread.currentThread().getId() + ": Warning - hashedData is null or empty.");
                     return new ArrayList<>();
@@ -73,9 +73,9 @@ public class TrainAgentRL implements Callable<List<String>> {
         QTableDao qTableDao = QTableDao.getInstance();
 
         List<String> exportingData = new ArrayList<>();
-        if(!BaseDao.getImportedGame().isEmpty()){
-            for (int i = 0; i < BaseDao.getImportedGame().size(); i++) {
-                exportingData.addAll(BaseDao.getImportedGame().get(i));
+        if(!BaseDao.getImportedGames().isEmpty()){
+            for (int i = 0; i < BaseDao.getImportedGames().size(); i++) {
+                exportingData.addAll(BaseDao.getImportedGames().get(i));
             }
 
         }

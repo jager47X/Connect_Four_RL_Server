@@ -1,8 +1,6 @@
 package dao;
 
 
-import target.Connect4;
-
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,7 +8,7 @@ import java.util.regex.Pattern;
 public class QTableDao extends BaseDao {
 
     protected static QTableDao instance;
-    private final Map<String, Set<QEntry>> qTable;
+    private final Map<String, Set<QEntry>> importedMap;
 
     List <List<Integer>> locationList;
 
@@ -20,11 +18,11 @@ public class QTableDao extends BaseDao {
 
 
 
-    public Map<String, Set<QEntry>> getQTable() {
-        return qTable;
+    public Map<String, Set<QEntry>> getImportedMap() {
+        return importedMap;
     }
 
-    String importingModel ="TEST_Supervised_Learning_policyNetwork.csv";
+    String importingModel ="Supervised_Learning_policyNetwork.csv";
 
     public static QTableDao getInstance() {
         if (instance != null) {
@@ -36,24 +34,24 @@ public class QTableDao extends BaseDao {
     public QTableDao() {
         super();
         import_CSV(importingModel);// Import QTable from CSV
-        qTable= new HashMap<>();
+        importedMap = new HashMap<>();
         locationList=new ArrayList<>();
         rewardList=new ArrayList<>();
-        initializeMap();
+        importSLNetWork();//load SL csv from csv
     }
 
 
-    private void initializeMap() {
+    public  void importSLNetWork() {
         // Load all into List location and reward
 // Load all into List location and reward
         if (ImportedGames != null) {
-            for (List<String> importedGame : ImportedGames) {
-                if (importedGame != null) {
+            for (List<String> moves : ImportedGames) {
+                if (moves != null) {
                     // Create new instances of location and reward lists for each game iteration
                     List<Integer> location = new ArrayList<>();
                     List<Double> reward = new ArrayList<>();
 
-                    for (String move : importedGame) {
+                    for (String move : moves) {
                         location.add(addLocation(move));
                         reward.add(addReward(move));
                     }
@@ -85,7 +83,7 @@ public class QTableDao extends BaseDao {
                     int game=gameIndex+1;
                     int currentTurn=turn+1;
                     System.out.println("game:"+game+" turn:"+currentTurn);
-                    parseWinner(ImportedGames.get(gameIndex).get(turn));
+                    winner= parseWinner(ImportedGames.get(gameIndex).get(turn));
 /*
                     if(turn%2==0){
                         connect4.setActivePlayer(Connect4.PLAYER2);
@@ -126,10 +124,10 @@ public class QTableDao extends BaseDao {
             }
         }
     }
-    private void updateQTable(String state, int action, double qvalue) {
+    public  void updateQTable(String state, int action, double qvalue) {
         QEntry qEntry = new QEntry(action, qvalue);
 
-        Set<QEntry> qEntrySet = qTable.computeIfAbsent(state, k -> new HashSet<>());
+        Set<QEntry> qEntrySet = importedMap.computeIfAbsent(state, k -> new HashSet<>());
 
         // Check if an entry with the same action already exists
         boolean containsAction = qEntrySet.stream()
@@ -147,16 +145,18 @@ public class QTableDao extends BaseDao {
             qEntrySet.add(qEntry);
         }
     }
-    private  void parseWinner(String move) {
+    public int parseWinner(String move) {
+        int winner=-1;
         System.out.println("reading move:"+move);
         Pattern pattern = Pattern.compile("P([012])L(\\d+)W(-?\\d+)R(\\d+)");
         Matcher matcher = pattern.matcher(move);
         if (matcher.matches()) {
-            this.winner=Integer.parseInt(matcher.group(3));
+          winner=Integer.parseInt(matcher.group(3));
             //  System.out.println("Player: " + this.player + ", Location: " + this.location + ", Movement: " + this.winner + ", Reward: " + this.qValue);
         }
+        return winner;
     }
-    private int addLocation(String move) {
+    public  int addLocation(String move) {
     int location=0;
         Pattern pattern = Pattern.compile("P([012])L(\\d+)W(-?\\d+)R(\\d+)");
         Matcher matcher = pattern.matcher(move);
@@ -165,7 +165,7 @@ public class QTableDao extends BaseDao {
            }
         return location;
     }
-    private  double addReward(String move) {
+    public   double addReward(String move) {
        double reward=0.0;
         Pattern pattern = Pattern.compile("P([012])L(\\d+)W(-?\\d+)R(\\d+)");
         Matcher matcher = pattern.matcher(move);

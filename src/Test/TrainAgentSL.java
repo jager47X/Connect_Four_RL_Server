@@ -19,8 +19,14 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 
+//initiate RL
+//take as list
+//repeat
+//epsode is win
+
 public class TrainAgentSL implements Callable<List<String>> {
-    List<QTableDto> QTableDtoList;
+    QTableDto QTable=new QTableDto();
+
     private final Lock agentLock = new ReentrantLock();
     private static long startTime = System.currentTimeMillis();
 
@@ -34,7 +40,7 @@ public class TrainAgentSL implements Callable<List<String>> {
         private List<String> train() {
             Connect4 game = new Connect4();
             Connect4Dto connect4Dto = new Connect4Dto(game);
-            ReinforceLearningAgentConnectFour agent = new ReinforceLearningAgentConnectFour(connect4Dto, QTableDtoList);
+            ReinforceLearningAgentConnectFour agent = new ReinforceLearningAgentConnectFour(connect4Dto);
 
 
             if (agentLock.tryLock()) {
@@ -71,9 +77,9 @@ public class TrainAgentSL implements Callable<List<String>> {
         QTableDao qTableDao = QTableDao.getInstance();
 
             List<String> exportingData = new ArrayList<>();
-            if(!BaseDao.getImportedGame().isEmpty()){
-                for (int i = 0; i < BaseDao.getImportedGame().size(); i++) {
-                    exportingData.addAll(BaseDao.getImportedGame().get(i));
+            if(!BaseDao.getImportedGames().isEmpty()){
+                for (int i = 0; i < BaseDao.getImportedGames().size(); i++) {
+                    exportingData.addAll(BaseDao.getImportedGames().get(i));
                 }
 
             }

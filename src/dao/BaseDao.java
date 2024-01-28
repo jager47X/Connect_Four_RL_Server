@@ -16,7 +16,7 @@ public abstract class BaseDao {
 
     protected static List<List<String>>  ImportedGames=new ArrayList<>();
 
-    public static List<List<String>> getImportedGame() {
+    public static List<List<String>> getImportedGames() {
         if(ImportedGames==null){
             System.out.println("Warning: ImportedData is Null.");
             return new ArrayList<>();

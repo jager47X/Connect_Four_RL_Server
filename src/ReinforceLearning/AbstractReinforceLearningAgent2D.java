@@ -1,88 +1,56 @@
 package ReinforceLearning;
 
 import dao.QEntry;
+import dao.QTableDao;
 import dto.Connect4Dto;
 import dto.QTableDto;
 import target.Connect4;
 
 import java.util.*;
 
-interface ReinforceLearningAgent2D{
-    QTableDto SupervisedLearning();
-    QTableDto ReinforceLearning();
-    int[] getLegalActions();
-    int selectAction();
-}
-public abstract class AbstractReinforceLearningAgent2D implements ReinforceLearningAgent2D{
+
+public abstract class AbstractReinforceLearningAgent2D {
 
     // Environment-specific variables
     protected Connect4 Environment;
-    protected List<QTableDto> QtableList;
+    protected QTableDto QTable;
     protected Connect4Dto connect4Dto;
     static int ROWS;
     static int COLS;
-
     static int ACTIONS;
 
 
-    public Connect4 getEnvironment() {
-        return Environment;
-    }
-
-    public void setEnvironment(Connect4 environment) {
-        Environment = environment;
-    }
-
-    protected AbstractReinforceLearningAgent2D(Connect4Dto connect4Dto,List<QTableDto> QtableList) {
+    protected AbstractReinforceLearningAgent2D(Connect4Dto connect4Dto, QTableDto ImportedQTable) {
         ROWS=connect4Dto.getGame().getROWS_SIZE();
         COLS=connect4Dto.getGame().getCOLS_SIZE();
         ACTIONS=connect4Dto.getGame().getCOLS_SIZE();
         this.connect4Dto=connect4Dto;
-
-
-        this.QtableList.addAll(QtableList);
-        QTableDto qTableDto=this.QtableList.get(QtableList.size()-1);
-        this.explorationRate= qTableDto.getExplorationRate();
-        this.learningRate=1-this.explorationRate;
-        connect4Dto.getGame().resetBoard();
         Environment=connect4Dto.getGame();
+        QTable=new QTableDto(ImportedQTable);//process QtableList into one Map
     }
 
+    protected AbstractReinforceLearningAgent2D(Connect4Dto connect4Dto) {
+        ROWS=connect4Dto.getGame().getROWS_SIZE();
+        COLS=connect4Dto.getGame().getCOLS_SIZE();
+        ACTIONS=connect4Dto.getGame().getCOLS_SIZE();
+        this.connect4Dto=connect4Dto;
+        Environment=connect4Dto.getGame();
+        QTable=new QTableDto();
+    }
 
-    // Hyper-parameters
-    double learningRate;
-    final double discountFactor=0.8;
-    double explorationRate;
-    final double minExplorationRate=0.1;
-    final  double explorationDecay=0.95;
 
 
     StringBuilder state = new StringBuilder();
     // Action selection logic
 
-    @Override
-    public int selectAction() {
-        if (Math.random() < explorationRate) {
-            // Exploration: choose a random action
-            System.out.println("Exploration");
-            int[] legalActions = getLegalActions();
-            if (explorationRate > minExplorationRate) {
-                explorationRate = explorationRate * explorationDecay;
-            }
-            return legalActions[new Random().nextInt(legalActions.length)];
-        } else {
+
+    public int selectAction(Connect4Dto CurrentState) {
+
             // Exploitation: choose the action with the highest Q-value
 
-            String stateIndex = stateToIndex(this.connect4Dto);
+            String stateIndex = stateToIndex(CurrentState);
 
-            Set<QEntry>qValues=new HashSet<>();
-            List<Set<QEntry>>QValuesList =new ArrayList<>();
-            for (int i = 0; i < QtableList.size()-1; i++) {
-                qValues.addAll(QtableList.get(i).getQEntry(stateIndex));
-                QValuesList.add(qValues);
-                qValues.clear();
-            }
-
+            Set<QEntry> qValues = QTable.getQEntry(stateIndex);
 
             System.out.println("Q-Values for State " + stateIndex + ":");
             for (QEntry qEntry : qValues) {
@@ -92,13 +60,51 @@ public abstract class AbstractReinforceLearningAgent2D implements ReinforceLearn
                 }
             }
 
-            int[] legalActions = getLegalActions();
+            int[] legalActions = getLegalActions(CurrentState);
 
             return findBestAction(legalActions, qValues);
 
-        }
+
     }
 
+
+
+    public int[] getLegalActions(Connect4Dto CurrentState) {//not =-6
+
+        List<Integer> legalActionsList = new ArrayList<>();
+// Iterate over each column to check if it's a legal action
+        for (int col = 0; col < COLS; col++) {
+            if (CurrentState.getGame().isValidColumn(col)) {
+                legalActionsList.add(col+1);
+            }
+        }
+
+        // Convert the list of legal actions to an array
+        int[] legalActions = new int[legalActionsList.size()];
+        for (int i = 0; i < legalActions.length; i++) {
+            legalActions[i] = legalActionsList.get(i);
+        }
+        System.out.println("legal action:"+ Arrays.toString(legalActions));
+        return legalActions;
+    }
+
+    public void updateQValue(String state, int action, double immediateReward, String nextState) {
+
+        Map<Integer, Double> currentQValues = QTable.getQValues(state,action);
+
+        // Ensure that the action is present in the Q-values map
+        if (currentQValues.containsKey(action)) {
+            double currentQValue = currentQValues.get(action);
+            double maxNextQValue = QTable.getMaxQValue(nextState);
+
+            double updatedQValue = (1 - QTable.getLearningRate()) * currentQValue +
+                    QTable.getLearningRate() * (immediateReward + QTable.getDiscountFactor() * maxNextQValue);
+            QTable.updateQValue(state, action, updatedQValue);
+        } else {
+            // Handle the case when the action is not present in the Q-values map
+            System.out.println("Action " + action + " not present in Q-values for state " + state);
+        }
+    }
 
 
 
@@ -134,22 +140,6 @@ public abstract class AbstractReinforceLearningAgent2D implements ReinforceLearn
 
 
 
-    public void updateQValue(String state, int action, double immediateReward, String nextState) {
-        Map<Integer, Double> currentQValues = QtableDto.getQValues(state,action);
-
-        // Ensure that the action is present in the Q-values map
-        if (currentQValues.containsKey(action)) {
-            double currentQValue = currentQValues.get(action);
-            double maxNextQValue = QtableDto.getMaxQValue(nextState);
-
-            double updatedQValue = (1 - learningRate) * currentQValue +
-                    learningRate * (immediateReward + discountFactor * maxNextQValue);
-            QtableDto.updateQValue(state, action, updatedQValue);
-        } else {
-            // Handle the case when the action is not present in the Q-values map
-            System.out.println("Action " + action + " not present in Q-values for state " + state);
-        }
-    }
 
 
     private String stateToIndex(Connect4Dto dto) {
@@ -175,11 +165,5 @@ public abstract class AbstractReinforceLearningAgent2D implements ReinforceLearn
         return state.toString();
     }
 
-    public StringBuilder getState() {
-        return state;
-    }
 
-    public void setState(StringBuilder state) {
-        this.state = state;
-    }
 }

@@ -7,7 +7,7 @@ public class HandlerFactory {
 
 public static BaseHandler getHandler(ParsedRequest request) {
       switch (request.getPath()) {
-          case "/AIResponse" -> {
+          case "/AgentResponse" -> {
 
               return new AgentResponse();
           }

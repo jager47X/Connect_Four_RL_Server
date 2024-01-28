@@ -19,8 +19,7 @@ public class Connect4{
         private  Board board;
         private int turn;
         private int winner;
-        private final int winningPoint=64;
-        private int totalRewardP1;
+    private int totalRewardP1;
         private int totalRewardP2;
         private final List<Integer> location;
         int totalConnection;
@@ -240,13 +239,14 @@ public class Connect4{
 
         public boolean winCheck() {
 
+            int winningPoint = 64;
             if (!isEmpty()||turn==42) { // no winner
                 winner = 0;
                 return true;
-            } else if(totalRewardP1==winningPoint){
+            } else if(totalRewardP1== winningPoint){
                 winner=1;
                 return true;
-            } else if (totalRewardP2==winningPoint){
+            } else if (totalRewardP2== winningPoint){
                 winner=2;
                 return true;
             } else { // game will resume

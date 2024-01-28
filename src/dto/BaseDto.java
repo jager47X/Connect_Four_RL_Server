@@ -44,8 +44,9 @@ public abstract class BaseDto {
         this.board = board;
     }
 
-
-
+    public void setHashedData(List<String> hashedData) {
+        HashedData = hashedData;
+    }
 
     public void addLine() {
         if(HashedData.isEmpty()){
