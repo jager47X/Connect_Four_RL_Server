@@ -166,46 +166,49 @@ def load_model(
 env = Connect4()
 
 @app.route("/reset", methods=["POST"])
-def reset():
+def send_reset():
     """
-    Reset the game.
+    Reset the game and return the initial state.
     """
     env.reset()
-    return jsonify({"message": "Game reset", "board": env.get_board().tolist()})
+    return jsonify({
+        "message": "Game reset",
+        "board": env.get_board().tolist(),
+        "valid_actions": env.get_valid_actions(),
+        "current_player": env.current_player
+    })
 
-@app.route("/move", methods=["POST"])
-def move():
+
+@app.route("/aiMove", methods=["GET"])
+def get_ai_move():
     """
-    Handle a move by the player.
+    Compute the AI's move and return the updated board.
     """
     device = torch.device("cpu")
-    policy_net=load_model(MODEL_PATH,device)
-    data = request.get_json()
-    action = data.get("action")
-    if action is None or not env.is_valid_action(action):
-        return jsonify({"error": "Invalid move"}), 400
+    policy_net = load_model(MODEL_PATH, device)
 
-    # Player's move
-    env.make_move(action)
-    if env.check_winner():
-        return jsonify({"winner": "player", "board": env.get_board().tolist()})
-    if env.is_draw():
-        return jsonify({"winner": "draw", "board": env.get_board().tolist()})
-
-    # AI's move
+    # Get current board state
     state = torch.tensor(env.get_board(), dtype=torch.float32).unsqueeze(0).to(device)
+
+    # Compute Q-values for the current state
     with torch.no_grad():
         q_values = policy_net(state)
+
+    # Get valid actions and select the best one
     valid_actions = env.get_valid_actions()
     valid_q_values = {action: q_values[0, action].item() for action in valid_actions}
     ai_action = max(valid_q_values, key=valid_q_values.get)
 
+    # Make the AI's move
     env.make_move(ai_action)
+
+    # Check for winner or draw
     if env.check_winner():
         return jsonify({"winner": "ai", "board": env.get_board().tolist()})
     if env.is_draw():
         return jsonify({"winner": "draw", "board": env.get_board().tolist()})
 
+    # Return the updated board
     return jsonify({"board": env.get_board().tolist()})
 
 if __name__ == "__main__":
